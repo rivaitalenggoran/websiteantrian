@@ -185,6 +185,17 @@
         }
         .btn-secondary:hover { background-color: rgba(255, 255, 255, 0.1); }
 
+        /* Tombol aksi pada halaman tiket */
+        .ticket-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .ticket-actions button {
+            flex: 1;
+        }
+
         /* CSS KHUSUS LOGIKA ANTRIAN */
         .content-box {
             background-color: rgba(255, 255, 255, 0.08);
@@ -240,6 +251,10 @@
             /* background-attachment: fixed dikenal patah-patah/tidak konsisten di Safari iOS
                dan sejumlah browser mobile lain, jadi dilepas khusus di layar kecil */
             body { background-attachment: scroll; }
+
+            .ticket-actions {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
@@ -356,7 +371,14 @@
             <p id="qi-status-message" style="margin-top: 15px; font-size: 1rem; font-weight: 600; min-height: 1.4em;"></p>
             <p style="margin-top: 10px; font-size: 0.8rem; color: #888;">Status diperbarui otomatis, tidak perlu memuat ulang halaman.</p>
 
-            <button class="btn-primary" style="margin-top: 30px; width: 100%;" onclick="showPage('user-page')">Ambil Tiket Lain</button>
+            <div class="ticket-actions">
+                <button class="btn-secondary" onclick="showPage('user-page')">
+                    Ambil Tiket Lain
+                </button>
+                <button class="btn-primary" onclick="takeSameServiceQueue()" id="same-service-btn">
+                    Ambil Tiket Layanan Ini
+                </button>
+            </div>
         </div>
     </main>
 
@@ -535,9 +557,20 @@
 
             document.getElementById('qi-service-name').innerText = typeName;
             document.getElementById('qi-your-number').innerText = myNumber;
+            document.getElementById('same-service-btn').innerText = 'Ambil Tiket ' + typeName;
 
             showPage('queue-info-page');
             updateTicketView();
+        }
+
+        // Mengambil nomor baru untuk layanan yang sama dengan tiket saat ini.
+        function takeSameServiceQueue() {
+            if (!currentTicket) return;
+
+            takeQueue(
+                currentTicket.typeKey,
+                currentTicket.typeName
+            );
         }
 
         // Menyegarkan nomor yang sedang dilayani + posisi antrian pengguna di halaman tiket.
