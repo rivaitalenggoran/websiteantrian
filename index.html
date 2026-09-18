@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="dark">
+    <title>Sistem Antrian Terpadu</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* ========================================= */
+        /* CSS DASAR DARI INDEXCONTOH & STYLES.CSS   */
+        /* ========================================= */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            /* Latar belakang gelap dengan transparansi 85% */
+            background-image: linear-gradient(rgba(26, 26, 26, 0.85), rgba(26, 26, 26, 0.85)), url('HeroImg.jfif');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            min-height: 100vh;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Navigasi (Header) */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 30px 60px;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo-img {
+            width: 400px;
+            height: auto;
+        }
+
+        /* Fallback teks jika Logo.png belum ada di folder (lihat onerror pada <img>) */
+        #logo-fallback {
+            display: none;
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            color: #ffffff;
+        }
+
+        /* Menyembunyikan elemen (Logika Antrian) */
+        .hidden { display: none !important; }
+
+        /* Notifikasi kecil saat localStorage tidak bisa diakses */
+        .storage-notice {
+            background-color: rgba(216, 137, 57, 0.15);
+            border: 1px solid #d88939;
+            color: #ffd9a8;
+            text-align: center;
+            padding: 12px 20px;
+            font-size: 0.9rem;
+            margin: 0 60px;
+            border-radius: 8px;
+        }
+
+        /* Tata Letak Konten Utama */
+        main {
+            display: flex;
+            flex: 1;
+            padding: 40px 60px;
+            align-items: center;
+            justify-content: space-between;
+            gap: 50px;
+            flex-direction: column;
+        }
+
+        main.beranda-layout {
+            flex-direction: row;
+        }
+
+        .left-section, .right-section { flex: 1; width: 100%; }
+
+        .left-section { padding-right: 50px; padding-bottom: 50px; }
+        .left-section h1 { font-size: 4rem; font-weight: 700; margin-bottom: 20px; line-height: 1.1; }
+        .left-section p { font-size: 1.4rem; font-weight: 600; margin-bottom: 40px; line-height: 1.4; }
+
+        .page-header { text-align: center; margin-bottom: 50px; width: 100%; }
+        .page-header h1 { font-size: 3rem; font-weight: 700; margin-bottom: 10px; color: #ffffff; }
+        .page-header p { font-size: 1.2rem; color: #d1d1d1; }
+
+        /* Grid Default untuk Admin/Home */
+        .desa-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            width: 100%;
+        }
+
+        /* Grid Terpusat Khusus untuk Menu Layanan User */
+        .centered-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: stretch;
+            gap: 30px;
+            width: 100%;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        /* Modifikasi Card agar serasi di dalam Grid Tengah */
+        .centered-grid .desa-card {
+            flex: 1 1 250px;
+            max-width: 300px; /* Membatasi lebar kartu agar tidak terlalu panjang */
+        }
+
+        /* Desain Kartu (Card) */
+        .desa-card {
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 25px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease, background-color 0.3s ease;
+            cursor: pointer;
+        }
+
+        .desa-card:hover {
+            transform: translateY(-5px);
+            background-color: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Fokus keyboard yang terlihat jelas untuk kartu yang bisa diklik (aksesibilitas) */
+        .desa-card:focus {
+            outline: 3px solid #5bb3ff;
+            outline-offset: 3px;
+        }
+        .desa-card:focus:not(:focus-visible) { outline: none; }
+
+        .desa-card h3 { font-size: 1.5rem; font-weight: 700; margin-bottom: 5px; color: #d88939; }
+        .desa-card p { font-size: 0.95rem; color: #d1d1d1; margin-bottom: 25px; flex-grow: 1; }
+
+        /* Tombol */
+        .btn-primary {
+            background-color: #d88939;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            transition: background-color 0.3s ease;
+            width: 100%;
+        }
+        .btn-primary:hover { background-color: #b8732e; }
+
+        .btn-secondary {
+            background-color: transparent;
+            color: white;
+            border: 2px solid white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            display: inline-block;
+        }
+        .btn-secondary:hover { background-color: rgba(255, 255, 255, 0.1); }
+
+        /* CSS KHUSUS LOGIKA ANTRIAN */
+        .content-box {
+            background-color: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 40px;
+            border-radius: 12px;
+            text-align: center;
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .queue-number { font-size: 5rem; font-weight: bold; color: #d88939; margin: 10px 0; }
+        .serving-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #5bb3ff;
+            margin-top: 5px;
+            transition: transform 0.25s ease;
+        }
+        /* Efek kecil saat nomor yang dilayani berubah secara live */
+        .serving-number.updated { transform: scale(1.15); }
+
+        /* Desain Tabel Admin */
+        .table-wrapper {
+            background-color: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            padding: 20px;
+            width: 100%;
+            margin-top: 30px;
+            overflow-x: auto;
+        }
+
+        table { width: 100%; border-collapse: collapse; color: #ffffff; }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+        th { color: #d88939; font-size: 1.1rem; border-bottom: 2px solid #d88939; }
+
+        .admin-nav {
+            display: flex; justify-content: space-between; width: 100%; margin-bottom: 30px;
+        }
+
+        /* MEDIA QUERY MOBILE */
+        @media screen and (max-width: 900px) {
+            header { flex-direction: column; padding: 20px; text-align: center; }
+            .logo-img { width: 100%; max-width: 250px; }
+            main, main.beranda-layout { flex-direction: column !important; padding: 20px 15px !important; }
+            .left-section { padding-right: 0; text-align: center; }
+            .left-section h1 { font-size: 2.5rem; }
+            .desa-grid, .centered-grid { display: grid; grid-template-columns: 1fr; }
+            .centered-grid .desa-card { max-width: 100%; }
+            .storage-notice { margin: 0 15px; }
+            /* background-attachment: fixed dikenal patah-patah/tidak konsisten di Safari iOS
+               dan sejumlah browser mobile lain, jadi dilepas khusus di layar kecil */
+            body { background-attachment: scroll; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header dengan Logo -->
+    <header>
+        <div class="logo-container">
+            <img src="Logo.png" alt="Logo BPS" class="logo-img" id="site-logo"
+                 onerror="this.style.display='none'; document.getElementById('logo-fallback').style.display='block';">
+            <span id="logo-fallback">BPS Talaud</span>
+        </div>
+        <button class="btn-secondary hidden" onclick="showPage('home-page')" id="nav-btn-home">Kembali ke Beranda</button>
+    </header>
+
+    <div id="storage-notice" class="storage-notice hidden">
+        ⚠️ Penyimpanan lokal browser tidak dapat diakses saat ini. Aplikasi tetap bisa dipakai, tapi data antrian tidak akan tersimpan setelah halaman ditutup.
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 1. HALAMAN AWAL (PILIH ROLE)               -->
+    <!-- ========================================== -->
+    <main id="home-page" class="beranda-layout">
+        <div class="left-section">
+            <h1>Selamat datang</h1>
+            <p>Sistem Antrian Terpadu<br>Silakan pilih pintu masuk Anda.</p>
+        </div>
+        <div class="right-section">
+            <div class="desa-grid">
+                <div class="desa-card" role="button" tabindex="0"
+                     onclick="showPage('admin-page'); renderAdmin();"
+                     onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">
+                    <h3>Panel Admin</h3>
+                    <p>Kelola panggilan antrian dan lihat riwayat pelayanan.</p>
+                    <span class="btn-primary" style="text-align: center;">Masuk Admin</span>
+                </div>
+                <div class="desa-card" role="button" tabindex="0"
+                     onclick="showPage('user-page')"
+                     onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">
+                    <h3>Ambil Antrian</h3>
+                    <p>Pilih layanan yang Anda butuhkan dan dapatkan tiket.</p>
+                    <span class="btn-primary" style="text-align: center;">Masuk User</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ========================================== -->
+    <!-- 2. HALAMAN USER (PILIH LAYANAN)            -->
+    <!-- ========================================== -->
+    <main id="user-page" class="hidden" style="justify-content: center;">
+        <div class="page-header">
+            <h1>Pilih Layanan</h1>
+            <p>Silakan klik salah satu kartu layanan di bawah ini</p>
+        </div>
+
+        <!-- Grid khusus ini (centered-grid) akan memastikan posisinya persis di tengah layar -->
+        <div class="centered-grid">
+            <!-- 3 Grid Layanan PST dipecah -->
+            <div class="desa-card" role="button" tabindex="0"
+                 onclick="takeQueue('konsultasi', 'Konsultasi')"
+                 onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">
+                <h3>Konsultasi</h3>
+                <p>Layanan konsultasi data dan statistik (PST).</p>
+                <span class="btn-primary" style="text-align: center;">Ambil Tiket</span>
+            </div>
+            <div class="desa-card" role="button" tabindex="0"
+                 onclick="takeQueue('rekomendasi', 'Rekomendasi')"
+                 onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">
+                <h3>Rekomendasi</h3>
+                <p>Layanan rekomendasi kegiatan statistik (PST).</p>
+                <span class="btn-primary" style="text-align: center;">Ambil Tiket</span>
+            </div>
+            <div class="desa-card" role="button" tabindex="0"
+                 onclick="takeQueue('perpus', 'Perpustakaan')"
+                 onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">
+                <h3>Perpustakaan</h3>
+                <p>Layanan perpustakaan cetak &amp; digital (PST).</p>
+                <span class="btn-primary" style="text-align: center;">Ambil Tiket</span>
+            </div>
+
+            <!-- Layanan Lainnya -->
+            <div class="desa-card" role="button" tabindex="0"
+                 onclick="takeQueue('pengaduan', 'Pengaduan')"
+                 onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">
+                <h3>Pengaduan</h3>
+                <p>Layanan pengaduan masyarakat umum.</p>
+                <span class="btn-primary" style="text-align: center;">Ambil Tiket</span>
+            </div>
+            <div class="desa-card" role="button" tabindex="0"
+                 onclick="takeQueue('umum', 'Umum')"
+                 onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); this.click();}">
+                <h3>Umum</h3>
+                <p>Layanan operasional dan urusan umum.</p>
+                <span class="btn-primary" style="text-align: center;">Ambil Tiket</span>
+            </div>
+        </div>
+    </main>
+
+    <!-- ========================================== -->
+    <!-- 3. HALAMAN INFO ANTRIAN (TIKET USER)       -->
+    <!-- ========================================== -->
+    <main id="queue-info-page" class="hidden">
+        <div class="content-box">
+            <h2 style="color: #5bb3ff; margin-bottom: 20px; font-size: 1.8rem;" id="qi-service-name">Layanan</h2>
+
+            <p style="color: #d1d1d1; font-size: 1.1rem;">Nomor Antrian Anda:</p>
+            <div class="queue-number" id="qi-your-number">0</div>
+
+            <hr style="border-color: rgba(255,255,255,0.1); margin: 30px 0;">
+
+            <p style="color: #d1d1d1; font-size: 1.1rem;">Nomor yang sedang dilayani:</p>
+            <div class="serving-number" id="qi-serving-number">0</div>
+            <p id="qi-status-message" style="margin-top: 15px; font-size: 1rem; font-weight: 600; min-height: 1.4em;"></p>
+            <p style="margin-top: 10px; font-size: 0.8rem; color: #888;">Status diperbarui otomatis, tidak perlu memuat ulang halaman.</p>
+
+            <button class="btn-primary" style="margin-top: 30px; width: 100%;" onclick="showPage('user-page')">Ambil Tiket Lain</button>
+        </div>
+    </main>
+
+    <!-- ========================================== -->
+    <!-- 4. HALAMAN ADMIN DASHBOARD                 -->
+    <!-- ========================================== -->
+    <main id="admin-page" class="hidden" style="max-width: 1200px; margin: 0 auto; align-items: stretch;">
+        <div class="admin-nav">
+            <div>
+                <h1 style="font-size: 2.5rem;">Dashboard Admin</h1>
+                <p style="color: #d1d1d1;">Kontrol panggilan dan riwayat layanan.</p>
+            </div>
+            <div>
+                <button class="btn-secondary" onclick="resetData()">Reset Data Global</button>
+            </div>
+        </div>
+
+        <h2 style="color: #5bb3ff; margin-bottom: 20px;">Kontrol Antrian</h2>
+        <!-- Memanfaatkan grid terpusat juga agar kartu admin rapi -->
+        <div class="centered-grid" id="admin-controls-container" style="justify-content: flex-start;">
+            <!-- Render via JS -->
+        </div>
+
+        <div class="table-wrapper">
+            <h2 style="color: #5bb3ff; margin-bottom: 20px;">Riwayat Antrian Terbaru</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tanggal</th>
+                        <th>Waktu (WITA)</th>
+                        <th>Jenis Layanan</th>
+                        <th>Nomor Antrian</th>
+                    </tr>
+                </thead>
+                <tbody id="history-table-body">
+                    <!-- Render via JS -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- ========================================== -->
+    <!-- SCRIPT JAVASCRIPT (LOGIKA ANTRIAN)         -->
+    <!-- ========================================== -->
+    <script>
+        // ---------- STATE ----------
+        let queueData, queueHistory;
+        let currentPage = 'home-page';
+        let currentTicket = null; // { typeKey, typeName, myNumber, date }
+        let storageAvailable = true;
+        let lastTakeQueueTime = 0;
+
+        function defaultQueueData() {
+            return {
+                konsultasi: { name: 'Konsultasi', currentServing: 0, totalQueue: 0 },
+                rekomendasi: { name: 'Rekomendasi', currentServing: 0, totalQueue: 0 },
+                perpus: { name: 'Perpustakaan', currentServing: 0, totalQueue: 0 },
+                pengaduan: { name: 'Pengaduan', currentServing: 0, totalQueue: 0 },
+                umum: { name: 'Umum', currentServing: 0, totalQueue: 0 }
+            };
+        }
+
+        // ---------- AKSES localStorage YANG AMAN ----------
+        // Dibungkus try/catch supaya aplikasi tidak "macet total" (semua tombol berhenti
+        // merespons) kalau localStorage diblokir - mode privat, iframe sandbox/preview,
+        // atau pengaturan browser tertentu.
+        function safeGet(key) {
+            try {
+                return localStorage.getItem(key);
+            } catch (e) {
+                storageAvailable = false;
+                return null;
+            }
+        }
+
+        function safeSet(key, value) {
+            try {
+                localStorage.setItem(key, value);
+                return true;
+            } catch (e) {
+                storageAvailable = false;
+                return false;
+            }
+        }
+
+        function safeRemove(key) {
+            try { localStorage.removeItem(key); } catch (e) { /* abaikan */ }
+        }
+
+        // Key "queueDataV2" / "queueHistoryV2" sengaja dipertahankan (bukan diganti V3)
+        // supaya data pengujian yang sudah tersimpan di browser tetap kebaca di versi ini.
+        function loadState() {
+            try {
+                queueData = JSON.parse(safeGet('queueDataV2')) || defaultQueueData();
+            } catch (e) {
+                queueData = defaultQueueData();
+            }
+            try {
+                queueHistory = JSON.parse(safeGet('queueHistoryV2')) || [];
+            } catch (e) {
+                queueHistory = [];
+            }
+        }
+
+        function saveData() {
+            safeSet('queueDataV2', JSON.stringify(queueData));
+            safeSet('queueHistoryV2', JSON.stringify(queueHistory));
+            updateStorageNotice();
+        }
+
+        function updateStorageNotice() {
+            const el = document.getElementById('storage-notice');
+            if (!el) return;
+            el.classList.toggle('hidden', storageAvailable);
+        }
+
+        // ---------- TANGGAL & RESET HARIAN ----------
+        // Nomor antrian direset otomatis setiap pergantian hari (zona waktu WITA) supaya
+        // nomor tidak terus menumpuk selama berhari-hari. Riwayat tetap tersimpan lengkap.
+        function getTodayStr() {
+            return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Makassar' });
+        }
+
+        function checkDailyReset() {
+            const today = getTodayStr();
+            const lastDate = safeGet('queueLastDateV2');
+            if (lastDate !== today) {
+                for (let key in queueData) {
+                    queueData[key].currentServing = 0;
+                    queueData[key].totalQueue = 0;
+                }
+                safeSet('queueLastDateV2', today);
+                saveData();
+            }
+        }
+
+        // ---------- NAVIGASI HALAMAN ----------
+        function showPage(pageId) {
+            document.getElementById('home-page').classList.add('hidden');
+            document.getElementById('user-page').classList.add('hidden');
+            document.getElementById('queue-info-page').classList.add('hidden');
+            document.getElementById('admin-page').classList.add('hidden');
+
+            document.getElementById(pageId).classList.remove('hidden');
+            currentPage = pageId;
+
+            if (pageId === 'home-page') {
+                document.getElementById('nav-btn-home').classList.add('hidden');
+            } else {
+                document.getElementById('nav-btn-home').classList.remove('hidden');
+            }
+        }
+
+        // ---------- FUNGSI USER: AMBIL ANTRIAN ----------
+        function takeQueue(typeKey, typeName) {
+            // Cegah tiket ganda akibat klik ganda yang tidak sengaja
+            const now = Date.now();
+            if (now - lastTakeQueueTime < 1000) return;
+            lastTakeQueueTime = now;
+
+            loadState();
+            checkDailyReset();
+
+            queueData[typeKey].totalQueue += 1;
+            let myNumber = queueData[typeKey].totalQueue;
+
+            let time = new Date().toLocaleTimeString('id-ID', {
+                hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Asia/Makassar'
+            });
+            let dateStr = getTodayStr();
+            queueHistory.unshift({ time: time, date: dateStr, service: typeName, number: myNumber });
+
+            saveData();
+
+            currentTicket = { typeKey: typeKey, typeName: typeName, myNumber: myNumber, date: dateStr };
+
+            document.getElementById('qi-service-name').innerText = typeName;
+            document.getElementById('qi-your-number').innerText = myNumber;
+
+            showPage('queue-info-page');
+            updateTicketView();
+        }
+
+        // Menyegarkan nomor yang sedang dilayani + posisi antrian pengguna di halaman tiket.
+        // Dipanggil berkala (lihat syncTick) supaya pengguna tidak perlu memuat ulang halaman.
+        function updateTicketView() {
+            if (!currentTicket) return;
+            const servingEl = document.getElementById('qi-serving-number');
+            const statusEl = document.getElementById('qi-status-message');
+
+            if (currentTicket.date !== getTodayStr()) {
+                servingEl.innerText = '-';
+                statusEl.innerHTML = 'Nomor antrian ini sudah berganti hari dan tidak berlaku lagi. Silakan ambil nomor baru.';
+                statusEl.style.color = '#d88939';
+                return;
+            }
+
+            const s = queueData[currentTicket.typeKey];
+            if (!s) return;
+
+            if (servingEl.innerText != s.currentServing) {
+                servingEl.innerText = s.currentServing;
+                servingEl.classList.add('updated');
+                setTimeout(() => servingEl.classList.remove('updated'), 300);
+            }
+
+            const sisaOrang = currentTicket.myNumber - s.currentServing - 1;
+            if (s.currentServing >= currentTicket.myNumber) {
+                statusEl.innerHTML = '🔔 Giliran Anda sekarang! Silakan menuju loket.';
+                statusEl.style.color = '#5bb3ff';
+            } else if (sisaOrang <= 0) {
+                statusEl.innerHTML = 'Anda berikutnya, harap bersiap.';
+                statusEl.style.color = '#d88939';
+            } else {
+                statusEl.innerHTML = sisaOrang + ' orang lagi sebelum giliran Anda.';
+                statusEl.style.color = '#d1d1d1';
+            }
+        }
+
+        // ---------- FUNGSI ADMIN: RENDER DASHBOARD ----------
+        function renderAdmin() {
+            let controlsHTML = '';
+            for (let key in queueData) {
+                let s = queueData[key];
+                let sisa = s.totalQueue - s.currentServing;
+
+                controlsHTML += `
+                    <div class="desa-card" style="cursor: default;">
+                        <h3 style="color: #ffffff;">${s.name}</h3>
+                        <p style="margin-bottom: 10px;">Dilayani: <b style="color: #5bb3ff; font-size: 1.2rem;">${s.currentServing}</b><br>
+                        Menunggu: <b style="color: #d88939;">${sisa > 0 ? sisa : 0}</b></p>
+                        <button class="btn-primary" onclick="nextQueue('${key}')" style="width: 100%; font-size: 0.85rem;">Panggil Berikutnya &rarr;</button>
+                    </div>
+                `;
+            }
+            document.getElementById('admin-controls-container').innerHTML = controlsHTML;
+
+            // Tabel History
+            let historyHTML = '';
+            if (queueHistory.length === 0) {
+                historyHTML = '<tr><td colspan="4" style="text-align:center; color:#d1d1d1;">Belum ada riwayat antrian.</td></tr>';
+            } else {
+                queueHistory.forEach(h => {
+                    historyHTML += `<tr>
+                        <td>${h.date ? h.date : '-'}</td>
+                        <td>${h.time}</td>
+                        <td>${h.service}</td>
+                        <td><b style="color: #d88939; font-size: 1.2rem;">${h.number}</b></td>
+                    </tr>`;
+                });
+            }
+            document.getElementById('history-table-body').innerHTML = historyHTML;
+        }
+
+        // ---------- FUNGSI ADMIN: PANGGIL ANTRIAN SELANJUTNYA ----------
+        function nextQueue(typeKey) {
+            loadState();
+            if (queueData[typeKey].currentServing < queueData[typeKey].totalQueue) {
+                queueData[typeKey].currentServing += 1;
+                saveData();
+                renderAdmin();
+            } else {
+                alert('Semua antrian untuk ' + queueData[typeKey].name + ' sudah dilayani.');
+            }
+        }
+
+        // ---------- FUNGSI RESET DATA ----------
+        function resetData() {
+            if (confirm('Yakin ingin menghapus seluruh data antrian secara permanen?')) {
+                safeRemove('queueDataV2');
+                safeRemove('queueHistoryV2');
+                safeRemove('queueLastDateV2');
+                location.reload();
+            }
+        }
+
+        // ---------- SINKRONISASI ANTAR TAB/PERANGKAT ----------
+        // Sebelumnya queueData hanya dibaca sekali saat halaman dimuat, jadi tab Admin
+        // tidak pernah melihat tiket baru dari tab User (begitu juga sebaliknya) tanpa
+        // memuat ulang halaman secara manual - inilah sumber tampilan yang terlihat "macet".
+        // Fungsi di bawah membaca ulang data dan menyegarkan tampilan yang sedang aktif.
+        function refreshCurrentView() {
+            if (currentPage === 'admin-page') {
+                renderAdmin();
+            } else if (currentPage === 'queue-info-page') {
+                updateTicketView();
+            }
+        }
+
+        function syncTick() {
+            loadState();
+            checkDailyReset();
+            refreshCurrentView();
+        }
+
+        // Event 'storage' otomatis terpicu di tab/jendela LAIN saat localStorage berubah
+        window.addEventListener('storage', function (e) {
+            if (e.key === 'queueDataV2' || e.key === 'queueHistoryV2' || e.key === 'queueLastDateV2') {
+                syncTick();
+            }
+        });
+
+        // Polling ringan sebagai cadangan (mis. saat event 'storage' tidak tersedia
+        // di konteks preview/sandbox tertentu)
+        setInterval(syncTick, 4000);
+
+        // ---------- INISIALISASI ----------
+        loadState();
+        checkDailyReset();
+        updateStorageNotice();
+        document.getElementById('nav-btn-home').classList.add('hidden');
+    </script>
+</body>
+</html>
